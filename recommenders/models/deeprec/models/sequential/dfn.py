@@ -3,7 +3,7 @@
 import sys
 sys.path.append('/home/linian/.local/lib/python3.7/site-packages/recommenders/models/deeprec/models/sequential/')
 import tensorflow as tf
-from sli_rec import (
+from .sli_rec import (
     SLI_RECModel,
 )
 from tensorflow.compat.v1.nn.rnn_cell import GRUCell
@@ -11,7 +11,7 @@ from recommenders.models.deeprec.models.sequential.rnn_cell_implement import (
     VecAttGRUCell,
 )
 # from tensorflow.compat.v1.nn import dynamic_rnn
-from rnn_dien import dynamic_rnn
+from .rnn_dien import dynamic_rnn
 
 __all__ = ["DFNModel"]
 

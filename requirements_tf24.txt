@@ -1,0 +1,10 @@
+numpy
+pandas
+scikit-learn
+PyYAML
+tqdm
+absl-py==0.10
+setproctitle==1.1.10
+tensorflow==2.4.1
+protobuf==3.19.6
+retrying==1.3.3

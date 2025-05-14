@@ -1,5 +1,9 @@
 import sys
 import os
+
+# Riga per errore : ModuleNotFoundError: No module named 'sli_rec'
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import logging
 from tempfile import TemporaryDirectory
 import numpy as np
