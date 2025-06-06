@@ -195,7 +195,6 @@ class FRUCell(RNNCell):
         h = feat_z*state + (1-feat_z)*h_hat
         return h, h
 
-        
 class SANetwork(tf.keras.layers.Layer):
     def __init__(self, dim, seq_len, num_interest=4, initializer=None):
         super(SANetwork, self).__init__()
