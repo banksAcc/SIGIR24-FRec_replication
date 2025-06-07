@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 
 # PERCORSI da modificare con i tuoi (usa raw string r"" per gli spazi!)
-folder_a = r"C:\Users\amile\OneDrive - Politecnico di Bari\Personal-Surface\UNI\magistrale poliba\ESAMI\INFO RETRIELVAL AND PERSONALIZATION\PROGETTO NOSTRO\GIT\recommenders"
-folder_b = r"C:\Users\amile\OneDrive - Politecnico di Bari\Personal-Surface\UNI\magistrale poliba\ESAMI\INFO RETRIELVAL AND PERSONALIZATION\PROGETTO NOSTRO\recommenders-1.1.1\recommenders"
+folder_a = r"path\to\folder_a"
+folder_b = r"path\to\folder_b"
 
 report_lines = []
 

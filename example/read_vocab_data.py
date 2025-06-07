@@ -1,7 +1,7 @@
 import pickle
 
 
-with open("../data/data/taobao/category_vocab.pkl", "rb") as f:
+with open("../data/data/taobao/user_vocab.pkl", "rb") as f:
     item_vocab = pickle.load(f)
 
 print(type(item_vocab))       # probabilmente un dict o un vocab custom
