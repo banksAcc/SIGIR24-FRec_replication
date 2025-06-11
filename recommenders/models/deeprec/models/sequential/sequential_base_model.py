@@ -82,6 +82,7 @@ class SequentialBaseModel(BaseModel):
             elif self.our_model:
                 interest_logit = self._fcn_net(interest_output_rec, hparams.layer_sizes, scope="interest_fcn")
                 interest_logit = interest_logit - tf.nn.tanh(fatigue_logit)*self.iterator.CL_mask
+
             else:
                 logit = self._fcn_net(model_output_rec, hparams.layer_sizes, scope="logit_fcn")
             self._add_norm()

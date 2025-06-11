@@ -25,9 +25,20 @@ class Model(SequentialBaseModel):
         hparams = self.hparams
         W_initializer = self.initializer
         
-        history_emb = tf.concat([self.item_history_embedding, self.cate_history_embedding], -1)
-        fatigue_history_emb = tf.concat([self.item_fatigue_history_embedding, self.cate_fatigue_history_embedding], -1)        
-        self.mi_extractor = SANetwork(get_shape(history_emb)[-1], get_shape(history_emb)[1], hparams.num_interests, W_initializer)
+        history_emb = tf.concat([self.item_history_embedding,
+                                 self.cate_history_embedding], -1)
+        fatigue_history_emb = tf.concat([
+            self.item_fatigue_history_embedding,
+            self.cate_fatigue_history_embedding
+            ],-1)
+
+        self.mi_extractor = SANetwork(
+            get_shape(history_emb)[-1],
+            get_shape(history_emb)[1],
+            hparams.num_interests,
+            W_initializer
+        )
+
         if hparams.fatigue_weight:
             self.interest_cross = CrossNetwork(hparams.recent_k, hparams.recent_k//3, hparams.num_cross_layers, hparams.num_dense_layers, initializer=W_initializer, name='interest_cross')
         self.fatigue_cross = CrossNetwork(hparams.num_interests, hparams.num_interests//2, hparams.num_cross_layers, hparams.num_dense_layers, initializer=W_initializer, to_weight=False, name='fatigue_cross')
@@ -47,31 +58,49 @@ class Model(SequentialBaseModel):
         recent_item_emb = tf.gather(history_emb, recent_idx, axis=1, batch_dims=1)
         interest_norm = tf.expand_dims(tf.sqrt(tf.reduce_sum(tf.square(interest_emb), -1)), 1)
         target_item_emb = tf.expand_dims(target_item_embedding, axis=1)
-        M = tf.matmul(recent_item_emb-target_item_emb, interest_emb, transpose_b=True)/(interest_norm+1e-8)
+
+        M = tf.matmul(
+            recent_item_emb-target_item_emb,
+            interest_emb,
+            transpose_b=True)/(interest_norm+1e-8)
+        
         M = 1 / (1 + tf.math.abs(M))
-        M = tf.where(tf.tile(tf.expand_dims(recent_mask, -1), [1, 1, self.hparams.num_interests]), M, tf.zeros_like(M))
+
+        M = tf.where(
+            tf.tile(tf.expand_dims(recent_mask, -1),
+                    [1, 1, self.hparams.num_interests]),
+                    M, tf.zeros_like(M))
         
         if self.hparams.fatigue_weight:
+
             trans_M = tf.transpose(M, [0, 2, 1])
             interests_fatigue_weight = self.interest_cross(trans_M)
-            interests_fatigue_weight = tf.nn.softmax(interests_fatigue_weight*tf.expand_dims(CL_mask, -1), 1)
-            fused_interest_emb = tf.reduce_sum(interest_emb*interests_fatigue_weight, 1)
+            interests_fatigue_weight = tf.nn.softmax(
+                interests_fatigue_weight
+                *
+                tf.expand_dims(CL_mask, -1), 1)
+            fused_interest_emb = tf.reduce_sum(
+                interest_emb*interests_fatigue_weight, 1)
+            
         else:
             fused_interest_emb = tf.reduce_mean(interest_emb, 1)
             
         cross_M = self.fatigue_cross(M)
         recent_fatigue = tf.squeeze(self._fcn_net(cross_M, [get_shape(cross_M)[-1]//2], scope="fatigue_short"), -1)
+
         if self.hparams.fatigue_emb:
             conv_M = self.fatigue_tcn(cross_M)
-            recent_emb_feat = tf.concat([recent_item_emb, recent_item_emb, conv_M*tf.expand_dims(CL_mask, -1)], -1)
+
+            recent_emb_feat = tf.concat([recent_item_emb,recent_item_emb, conv_M*tf.expand_dims(CL_mask, -1)], -1)
             short_interest_emb = self.fatigue_rnn(recent_emb_feat, mask=recent_mask, initial_state=fused_interest_emb)
+
         else:
             recent_emb_feat = tf.concat([recent_item_emb, recent_item_emb], -1)
             short_interest_emb = self.fatigue_rnn(recent_emb_feat, mask=recent_mask, initial_state=fused_interest_emb)
-        interest_output = tf.concat([fused_interest_emb, short_interest_emb, target_item_embedding], -1)
-        
-        recent_fatigue = tf.reduce_sum(recent_fatigue*float_recent_mask, -1, keepdims=True)/tf.reduce_sum(float_recent_mask, -1, keepdims=True)
 
+
+        interest_output = tf.concat([fused_interest_emb, short_interest_emb, target_item_embedding], -1)
+        recent_fatigue = tf.reduce_sum(recent_fatigue*float_recent_mask, -1, keepdims=True)/tf.reduce_sum(float_recent_mask, -1, keepdims=True)
         return interest_output, recent_fatigue
 
 class CrossNetwork(tf.keras.layers.Layer):
