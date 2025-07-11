@@ -42,8 +42,10 @@ class Model(SequentialBaseModel):
         if hparams.fatigue_weight:
             self.interest_cross = CrossNetwork(hparams.recent_k, hparams.recent_k//3, hparams.num_cross_layers, hparams.num_dense_layers, initializer=W_initializer, name='interest_cross')
         self.fatigue_cross = CrossNetwork(hparams.num_interests, hparams.num_interests//2, hparams.num_cross_layers, hparams.num_dense_layers, initializer=W_initializer, to_weight=False, name='fatigue_cross')
+        
         if self.hparams.fatigue_emb:
             self.fatigue_tcn = TCN(hparams.recent_k, hparams.num_interests*2, hparams.k_size, 'causal', hparams.conv_channels, W_initializer, name='fatigue_tcn')
+            
         fatigue_cell = tf.keras.layers.StackedRNNCells([FRUCell(rnn_dim, get_shape(history_emb)[-1], W_initializer, W_initializer, name=f'FRUCell_{idx}') for idx, rnn_dim in enumerate(hparams.rnn_dims)])
         self.fatigue_rnn = tf.keras.layers.RNN(fatigue_cell)
         
