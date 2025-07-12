@@ -56,5 +56,5 @@ def plot_bar(metrica, titolo, ylabel, nome_file):
     plt.show()
 
 # === 5. Esecuzione per AUC e NDCG@2 ===
-plot_bar("auc", "AUC on Dataset", "AUC", "ablazione_auc.png")
-plot_bar("ndcg@2", "NDCG@2 on Dataset", "NDCG@2", "ablazione_ndcg2.png")
+plot_bar("auc", "AUC on Taobao", "AUC", "ablazione_auc.png")
+plot_bar("ndcg@2", "NDCG@2 on Taobao", "NDCG@2", "ablazione_ndcg2.png")
