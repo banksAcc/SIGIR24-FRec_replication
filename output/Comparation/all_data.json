@@ -1,0 +1,7 @@
+{
+    "frec_original":
+        {"auc": 0.8663, "logloss": 0.9768, "wauc": 0.8659, "mean_mrr": 0.7291, "ndcg@2": 0.689, "ndcg@4": 0.751, "hit@2": 0.7429, "hit@4": 0.8741, "group_auc": 0.8692},
+
+    "frec_replica":
+        {"auc": 0.8484, "logloss": 0.6479, "wauc": 0.8591, "mean_mrr": 0.7148, "ndcg@2": 0.6723, "ndcg@4": 0.7379, "hit@2": 0.7286, "hit@4": 0.8675, "group_auc": 0.8621}
+}
