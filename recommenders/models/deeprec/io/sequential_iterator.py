@@ -1,5 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # 0 = all logs, 1 = warning, 2 = error, 3 = fatal only
 
 import tensorflow as tf
 import numpy as np
@@ -358,7 +360,10 @@ class SequentialIterator(BaseIterator):
         time_from_first_action_list,
         time_to_now_list,
         time_to_now_sec_list,
-        batch_num_ngs
+        batch_num_ngs,
+        test_on_m=True,
+        m_min=1,
+        m_max=2
     ):
         """Convert data into numpy arrays that are good for further model operation.
 
@@ -378,6 +383,10 @@ class SequentialIterator(BaseIterator):
         Returns:
             dict: A dictionary, containing multiple numpy arrays that are convenient for further operation.
         """
+
+        # if test_on_m:
+        #     print(f"[DEBUG] Sampling pilotato su m: [{m_min}, {m_max}]")
+            
         if batch_num_ngs:
             instance_cnt = len(label_list)
             if instance_cnt < 5:
@@ -488,17 +497,55 @@ class SequentialIterator(BaseIterator):
                 item_cate_list_all.append(item_cate_list[i])
                 if self.hparams.model_type =='dfn':
                     fatigue_features.append(gen_fatigue_features(np.array(item_cate_history_batch[i][-this_length:]), item_cate_list[i], np.array(time_to_now_sec_list[i][-this_length:])))
+                
                 count = 0
                 while batch_num_ngs:
-                    random_value = random.randint(0, instance_cnt - 1)
-                    negative_item = item_list[random_value]
-                    if negative_item == positive_item:
-                        continue
+                    if test_on_m:
+                        found = False
+                        for idx in np.random.permutation(instance_cnt):
+                            neg_item = item_list[idx]
+                            neg_cate = item_cate_list[idx]
+                            if neg_item == positive_item:
+                                continue
+
+                            # Stima m
+                            this_length = min(history_lengths[i], max_seq_length_batch)
+                            hist_cate = np.array(item_cate_history_batch[i][-this_length:])
+                            hist_time = np.array(time_to_now_sec_list[i][-this_length:])
+                            m_val = gen_fatigue_features(hist_cate, neg_cate, hist_time)
+                            if m_min <= m_val <= m_max:
+                                negative_item = neg_item
+                                negative_cate = neg_cate
+                                found = True
+                                break
+
+                        if not found:
+                            print(f"[INFO] Nessun negative sample con m ∈ [{m_min}, {m_max}] per istanza {i}, uso fallback randomico.")
+                            while True:
+                                rand_idx = random.randint(0, instance_cnt - 1)
+                                negative_item = item_list[rand_idx]
+                                if negative_item != positive_item:
+                                    negative_cate = item_cate_list[rand_idx]
+                                    break
+                    else:
+                        while True:
+                            rand_idx = random.randint(0, instance_cnt - 1)
+                            negative_item = item_list[rand_idx]
+                            if negative_item != positive_item:
+                                negative_cate = item_cate_list[rand_idx]
+                                break
+
                     label_list_all.append(0)
                     item_list_all.append(negative_item)
-                    item_cate_list_all.append(item_cate_list[random_value])
-                    if self.hparams.model_type =='dfn':
-                        fatigue_features.append(gen_fatigue_features(np.array(item_cate_history_batch[i][-this_length:]), item_cate_list[random_value], np.array(time_to_now_sec_list[i][-this_length:])))
+                    item_cate_list_all.append(negative_cate)
+                    if self.hparams.model_type == 'dfn':
+                        fatigue_features.append(
+                            gen_fatigue_features(
+                                np.array(item_cate_history_batch[i][-this_length:]),
+                                negative_cate,
+                                np.array(time_to_now_sec_list[i][-this_length:])
+                            )
+                        )
                     count += 1
                     if count == batch_num_ngs:
                         break

@@ -48,7 +48,7 @@ flags.DEFINE_integer('valid_num_ngs', 4, 'Number of negative instances with a po
 flags.DEFINE_integer('test_num_ngs', 9, 'Number of negative instances with a positive instance for testing.')
 flags.DEFINE_string('name', '', 'Experiment name.')
 flags.DEFINE_string('model', 'model', 'Model name.')
-flags.DEFINE_boolean('only_test', True, 'Only test and do not train.')
+flags.DEFINE_boolean('only_test', False, 'Only test and do not train.')
 flags.DEFINE_string('rnn_model', 'time4lstm', 'RNN model option, could be gru, lstm, time4lstm.')
 flags.DEFINE_integer('epochs', 100, 'Number of epochs.')
 flags.DEFINE_integer('early_stop', 2, 'Patience for early stop.')
