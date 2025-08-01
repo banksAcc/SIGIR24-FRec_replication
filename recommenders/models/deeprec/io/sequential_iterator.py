@@ -363,7 +363,7 @@ class SequentialIterator(BaseIterator):
         batch_num_ngs,
         test_on_m=True,
         m_min=1,
-        m_max=2
+        m_max=10
     ):
         """Convert data into numpy arrays that are good for further model operation.
 
@@ -385,8 +385,7 @@ class SequentialIterator(BaseIterator):
         """
 
         # if test_on_m:
-        #     print(f"[DEBUG] Sampling pilotato su m: [{m_min}, {m_max}]")
-            
+        #     print(f"[DEBUG] Sampling pilotato su m: [{m_min}, {m_max}]")            
         if batch_num_ngs:
             instance_cnt = len(label_list)
             if instance_cnt < 5:
@@ -508,11 +507,16 @@ class SequentialIterator(BaseIterator):
                             if neg_item == positive_item:
                                 continue
 
-                            # Stima m
                             this_length = min(history_lengths[i], max_seq_length_batch)
                             hist_cate = np.array(item_cate_history_batch[i][-this_length:])
                             hist_time = np.array(time_to_now_sec_list[i][-this_length:])
-                            m_val = gen_fatigue_features(hist_cate, neg_cate, hist_time)
+
+                            m_feat = gen_fatigue_features(hist_cate, neg_cate, hist_time)
+                            m_val = m_feat[3] if len(m_feat) > 3 else 0.0  # estrai match entro 3h
+
+                            # Debug opzionale
+                            # print(f"[DEBUG] i={i}, neg_cate={neg_cate}, m_feat={m_feat}, m_val={m_val:.3f}")
+
                             if m_min <= m_val <= m_max:
                                 negative_item = neg_item
                                 negative_cate = neg_cate
@@ -520,8 +524,8 @@ class SequentialIterator(BaseIterator):
                                 break
 
                         if not found:
-                            print(f"[INFO] Nessun negative sample con m ∈ [{m_min}, {m_max}] per istanza {i}, uso fallback randomico.")
                             while True:
+                                print(f"[INFO] Nessun negative sample con m ∈ [{m_min}, {m_max}] per istanza {i}, uso fallback randomico.")
                                 rand_idx = random.randint(0, instance_cnt - 1)
                                 negative_item = item_list[rand_idx]
                                 if negative_item != positive_item:
@@ -538,18 +542,19 @@ class SequentialIterator(BaseIterator):
                     label_list_all.append(0)
                     item_list_all.append(negative_item)
                     item_cate_list_all.append(negative_cate)
+
                     if self.hparams.model_type == 'dfn':
-                        fatigue_features.append(
-                            gen_fatigue_features(
-                                np.array(item_cate_history_batch[i][-this_length:]),
-                                negative_cate,
-                                np.array(time_to_now_sec_list[i][-this_length:])
-                            )
+                        m_feat = gen_fatigue_features(
+                            np.array(item_cate_history_batch[i][-this_length:]),
+                            negative_cate,
+                            np.array(time_to_now_sec_list[i][-this_length:])
                         )
+                        fatigue_features.append(m_feat)
+
                     count += 1
                     if count == batch_num_ngs:
                         break
-
+            
             res = {}
             res["labels"] = np.asarray(label_list_all, dtype=np.float32).reshape(-1, 1)
             res["users"] = user_list_all
@@ -683,7 +688,7 @@ class SequentialIterator(BaseIterator):
             if self.hparams.model_type =='dfn':
                 res['fatigue_features'] = np.asarray(fatigue_features, dtype=np.float32)
             return res
-
+ 
     def gen_feed_dict(self, data_dict):
         """Construct a dictionary that maps graph elements to values.
 
