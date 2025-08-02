@@ -362,8 +362,8 @@ class SequentialIterator(BaseIterator):
         time_to_now_sec_list,
         batch_num_ngs,
         test_on_m=True,
-        m_min=1,
-        m_max=10
+        m_min=-20,
+        m_max=20
     ):
         """Convert data into numpy arrays that are good for further model operation.
 
@@ -501,21 +501,29 @@ class SequentialIterator(BaseIterator):
                 while batch_num_ngs:
                     if test_on_m:
                         found = False
+
+                        this_length = min(history_lengths[i], max_seq_length_batch)
+                        hist_cate = np.array(item_cate_history_batch[i][-this_length:])
+                        hist_time = np.array(time_to_now_sec_list[i][-this_length:])
+
+                        # calcola la frequenza del positivo nelle ultime 3h
+                        pos_cate = item_cate_list[i]
+                        pos_feat = gen_fatigue_features(hist_cate, pos_cate, hist_time)
+                        pos_count_3h = pos_feat[3] if len(pos_feat) > 3 else 0.0
+
                         for idx in np.random.permutation(instance_cnt):
                             neg_item = item_list[idx]
                             neg_cate = item_cate_list[idx]
                             if neg_item == positive_item:
                                 continue
 
-                            this_length = min(history_lengths[i], max_seq_length_batch)
-                            hist_cate = np.array(item_cate_history_batch[i][-this_length:])
-                            hist_time = np.array(time_to_now_sec_list[i][-this_length:])
+                            neg_feat = gen_fatigue_features(hist_cate, neg_cate, hist_time)
+                            neg_count_3h = neg_feat[3] if len(neg_feat) > 3 else 0.0
 
-                            m_feat = gen_fatigue_features(hist_cate, neg_cate, hist_time)
-                            m_val = m_feat[3] if len(m_feat) > 3 else 0.0  # estrai match entro 3h
+                            m_val = neg_count_3h - pos_count_3h
 
-                            # Debug opzionale
-                            # print(f"[DEBUG] i={i}, neg_cate={neg_cate}, m_feat={m_feat}, m_val={m_val:.3f}")
+                            # Debug opzionale:
+                            # print(f"[DEBUG] pos_count_3h={pos_count_3h}, neg_count_3h={neg_count_3h}, m_val={m_val}")
 
                             if m_min <= m_val <= m_max:
                                 negative_item = neg_item
@@ -525,7 +533,9 @@ class SequentialIterator(BaseIterator):
 
                         if not found:
                             while True:
-                                print(f"[INFO] Nessun negative sample con m ∈ [{m_min}, {m_max}] per istanza {i}, uso fallback randomico.")
+
+                                print(f"[INFO] Nessun negativo con m ∈ [{m_min}, {m_max}] per utente {user_list[i]}: pos_count_3h={pos_count_3h:.1f}")
+
                                 rand_idx = random.randint(0, instance_cnt - 1)
                                 negative_item = item_list[rand_idx]
                                 if negative_item != positive_item:

@@ -75,7 +75,7 @@ flags.DEFINE_integer('contrastive_length_threshold', 10, 'contrastive_length_thr
 flags.DEFINE_integer('L', 3, 'Markov order.')
 flags.DEFINE_integer('nv', 10, 'vertical dim.')
 flags.DEFINE_integer('nh', 10, 'horizonal dim.')
-flags.DEFINE_string('extractor', 'sa', 'caps or sa for comirec')
+flags.DEFINE_string('extractor', 'caps', 'caps or sa for comirec')
 
 
 def get_model(flags_obj, exp_name=''):
